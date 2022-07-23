@@ -2,27 +2,46 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
+	"strconv"
 )
 
-/** 
+/**
 cgroupは"Control Group"の略。
 プロセスIDをグループに追加すると、共通の設定を適用できる。
 ホストOSが持つCPUやメモリなどのリソースの制限をかけることができる。
 **/
 
-// プロセスIDを取得する(ランダムな文字列でも良い)
+var pid int = os.Getpid()
+var cgroup_dir string = "/sys/fs/cgroup/"
+var cgroup_mem_dir string
+var cgroup_mem_file string
+var mem_usage int
 
 
-// メモリの制限を設定する
 func main() {
-	currenProcessInfo()
+	// 使用メモリー数(定数)
+	var mem_limit int
+
+	mem_limit = 10
+	// メモリ制限を設定する
+	memory_limit(mem_limit)
 }
 
-func currenProcessInfo() {
-	// プロセスIDを取得する
-	pid := os.Getpid()
-	
-	fmt.Printf("%v\n", pid)
-
+// メモリを制限する関数
+func memory_limit(mem_limit int) {
+	// cgroupのメモリのディレクトリを定義する
+	cgroup_mem_dir = cgroup_dir + "memory/" + strconv.Itoa(pid)
+	// 設定ファイルを定義する
+	cgroup_mem_file = cgroup_mem_dir + "/memory.limit_in_bytes"
+	// ディレクトリが存在する場合、メモリ制限を設定する
+	if err := os.MkdirAll(cgroup_mem_dir, 0700); err != nil {
+		fmt.Println(err)
+	}
+	// ファイルにメモリ制限を設定する
+	ioutil.WriteFile(cgroup_mem_file, []byte(strconv.Itoa(mem_limit*1024*1024)), 0700)
+	// プロセスIDを追加する
+	ioutil.WriteFile(cgroup_mem_dir + "/cgroup.procs", []byte(strconv.Itoa(pid)), 0700)
 }
+
